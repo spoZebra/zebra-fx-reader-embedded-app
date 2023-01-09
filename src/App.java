@@ -5,8 +5,6 @@ import com.mot.rfid.api3.*;
 
 public class App {
 
-    RFIDReader myReader = null;
-
     String hostName = null;
     Integer port = null;
 
@@ -29,8 +27,6 @@ public class App {
 
     public App() {
 
-        myReader = new RFIDReader();
-
         System.out.println("Connecting...");
         connectToReader("127.0.0.1", 5084);
 
@@ -49,10 +45,12 @@ public class App {
                 }
 
                 inputReader.readLine();
+                System.out.println("Stopping...");
                 StopReading();
+                System.out.println("Evaluating tags...");
                 myEventHandler.EvaluateMovingTags();
 
-                myReader.disconnect();
+                ReaderSingleton.getInstance().disconnect();
                 keepWorking = false;
             }catch (Exception ex) {
                 System.out.println(ex.getMessage());
@@ -74,7 +72,7 @@ public class App {
             TagAccess.Sequence.Operation op = opSequence.new Operation();
             op.setAccessOperationCode(ACCESS_OPERATION_CODE.ACCESS_OPERATION_READ);
             op.WriteAccessParams.setMemoryBank(bank);
-            myReader.Actions.TagAccess.OperationSequence.add(op);
+            ReaderSingleton.getInstance().Actions.TagAccess.OperationSequence.add(op);
         }
 
         // Add RSSI filter to read just the tags within specific range
@@ -84,18 +82,18 @@ public class App {
         accessFilter.RssiRangeFilter.setPeakRSSILowerLimit((short)-40);
         accessFilter.RssiRangeFilter.setPeakRSSIUpperLimit((short)-10);
         
-        myReader.Actions.TagAccess.OperationSequence.performSequence(accessFilter, null, null);
+        ReaderSingleton.getInstance().Actions.TagAccess.OperationSequence.performSequence(accessFilter, null, null);
      */
-        myReader.Actions.TagAccess.OperationSequence.performSequence(null, null, null);
+        ReaderSingleton.getInstance().Actions.TagAccess.OperationSequence.performSequence(null, null, null);
 
-        System.out.println("Press Enter to stop inventory");
+        System.out.println("Press Enter to stop reading tags");
     }
 
     private void StopReading() {
         try {
-            myReader.Actions.TagAccess.OperationSequence.stopSequence();;
+            ReaderSingleton.getInstance().Actions.TagAccess.OperationSequence.stopSequence();;
         } catch (Exception ioex) {
-            System.out.println("IO Exception.Stopping inventory");
+            System.out.println("IO Exception.Stopping the sequence");
         }
     }
 
@@ -104,43 +102,32 @@ public class App {
         boolean isConnected = false;
         hostName = readerHostName;
         port = readerPort;
-        myReader.setHostName(hostName);
-        myReader.setPort(port);
+        ReaderSingleton.getInstance().setHostName(hostName);
+        ReaderSingleton.getInstance().setPort(port);
 
-        System.out.println("Connecting to: " + myReader.getHostName());
+        System.out.println("Connecting to: " + ReaderSingleton.getInstance().getHostName());
         try {
-            myReader.connect();
+            ReaderSingleton.getInstance().connect();
 
-            System.out.println("OK..." + myReader.getHostName());
+            System.out.println("OK..." + ReaderSingleton.getInstance().getHostName());
             // Register events
-            myReader.Events.setInventoryStartEvent(true);
-            myReader.Events.setInventoryStopEvent(true);
-            myReader.Events.setAccessStartEvent(true);
-            myReader.Events.setAccessStopEvent(true);
-            myReader.Events.setAntennaEvent(true);
-            myReader.Events.setGPIEvent(true);
-            myReader.Events.setBufferFullEvent(true);
-            myReader.Events.setBufferFullWarningEvent(true);
-            myReader.Events.setReaderDisconnectEvent(true);
-            myReader.Events.setReaderExceptionEvent(true);
-            myReader.Events.setTagReadEvent(true);
-            // This will trigger the read event per each tag
-            myReader.Events.setAttachTagDataWithReadEvent(true); 
-            
-            TagStorageSettings tagStorageSettings = myReader.Config.getTagStorageSettings();
-            TAG_FIELD[] tagField = new TAG_FIELD[3];
-            tagField[0] = TAG_FIELD.PC;
-            tagField[1] = TAG_FIELD.PEAK_RSSI;
-            tagField[2] = TAG_FIELD.ANTENNA_ID;
-            tagStorageSettings.setTagFields(tagField);
-            myReader.Config.setTagStorageSettings(tagStorageSettings);
+            ReaderSingleton.getInstance().Events.setAccessStartEvent(true);
+            ReaderSingleton.getInstance().Events.setAccessStopEvent(true);
+            ReaderSingleton.getInstance().Events.setAntennaEvent(true);
+            ReaderSingleton.getInstance().Events.setGPIEvent(true);
+            ReaderSingleton.getInstance().Events.setBufferFullEvent(true);
+            ReaderSingleton.getInstance().Events.setBufferFullWarningEvent(true);
+            ReaderSingleton.getInstance().Events.setReaderDisconnectEvent(true);
+            ReaderSingleton.getInstance().Events.setReaderExceptionEvent(true);
+            ReaderSingleton.getInstance().Events.setTagReadEvent(true);
+            // Group read events (better performance!)
+            ReaderSingleton.getInstance().Events.setAttachTagDataWithReadEvent(false); 
 
             // Event handler registration
-            myReader.Events.addEventsListener(myEventHandler);
+            ReaderSingleton.getInstance().Events.addEventsListener(myEventHandler);
 
             isConnected = true;
             System.out.println("Connected to " + hostName);
-            myReader.Config.setTraceLevel(TRACE_LEVEL.TRACE_LEVEL_ALL);
 
         } catch (InvalidUsageException ex) {
             System.out.println("Unable to connect: " + ex.getVendorMessage());
