@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Properties;
 
 import com.mot.rfid.api3.*;
 
@@ -20,7 +21,9 @@ public class App {
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("Ready");
-
+        System.setProperty("java.library.path", ":/platform/lib:/apps:/usr/java/packages/lib/arm:/lib:/usr/lib");
+        System.out.println(System.getProperty("java.library.path"));
+        System.loadLibrary( "rfidapi32jni" );
         App rfidBase;
         rfidBase = new App();
     }

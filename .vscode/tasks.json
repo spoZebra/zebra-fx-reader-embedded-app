@@ -10,7 +10,27 @@
 				"${dependencies}"
 			],
 			"problemMatcher": [],
-			"label": "java (buildArtifact): zebra-fx-reader-embedded-app"
+			"label": "Build Artifact",
+		},
+		{
+			"dependsOn": "Build Artifact",
+			"type": "shell",
+			"command": "scp",
+			"args": [
+				"./bin/zebra-fx-reader-embedded-app.jar",
+				"rfidadm@fx9600fcd59f:/mnt/data/"
+			],
+			"label": "Deploy Artifact",
+		},
+		{
+			"dependsOn": "Deploy Artifact",
+			"type": "shell",
+			"command": "ssh",
+			"args": [
+				"rfidadm@fx9600fcd59f",
+				"java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=49975 -jar /mnt/data/zebra-fx-reader-embedded-app.jar"
+			],
+			"label": "Launch Embedded App",
 		}
 	]
 }
